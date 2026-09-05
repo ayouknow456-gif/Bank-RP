@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Bank - Ultimate Admin Dashboard</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+                    },
+                    fontFamily: { sans: ['Prompt', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Prompt', sans-serif; }
+        
+        .credit-card {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.4);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            max-width: 440px;
+            aspect-ratio: 1.586 / 1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .credit-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -20%;
+            width: 100%; height: 150%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            transform: rotate(25deg);
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .hide { display: none !important; }
+        #reader video { border-radius: 0.75rem; width: 100% !important; border: none !important; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-50 transform transition-all duration-300 translate-x-full opacity-0 glass-panel shadow-2xl rounded-2xl p-4 flex items-center gap-3 border-l-4">
+        <i id="toast-icon" class="text-2xl"></i>
+        <div>
+            <h4 id="toast-title" class="font-bold text-sm">แจ้งเตือน</h4>
+            <span id="toast-msg" class="text-xs text-slate-300"></span>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-4">
+        <div class="glass-panel p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md text-center border border-slate-800 relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20 text-white text-3xl">
+                <i class="fas fa-university"></i>
+            </div>
+            <h1 class="text-2xl font-bold mb-2 tracking-wide">KIDS BANK ADMIN</h1>
+            <p class="text-slate-400 text-sm mb-8">ระบบธนาคารจำลองสำหรับเด็กๆ ยุคใหม่</p>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs text-slate-400 font-medium ml-1 mb-1 block">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500"><i class="fas fa-user"></i></span>
+                        <input type="text" id="login-user" placeholder="admin" class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700 focus:outline-none focus:border-blue-500 text-sm transition-all">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-medium ml-1 mb-1 block">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500"><i class="fas fa-lock"></i></span>
+                        <input type="password" id="login-pass" placeholder="••••" class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700 focus:outline-none focus:border-blue-500 text-sm transition-all">
+                    </div>
+                </div>
+                <button onclick="login()" class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-600/30 transition-all transform active:scale-[0.98]">
+                    เข้าสู่ระบบ <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="hide flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-72 bg-slate-900/90 backdrop-blur-xl border-r border-slate-800 flex flex-col z-20">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800/80">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                    <i class="fas fa-university text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold tracking-wider text-sm">KIDS BANK</h2>
+                    <span class="text-[10px] text-blue-400 font-medium px-2 py-0.5 rounded-full bg-blue-500/10">Admin System</span>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+                <a href="#" onclick="showView('dashboard')" class="nav-btn flex items-center gap-3 py-3 px-4 rounded-xl font-medium text-sm transition-all bg-blue-600 text-white shadow-lg shadow-blue-600/20"><i class="fas fa-chart-pie w-5"></i> ภาพรวมระบบ</a>
+                <a href="#" onclick="showView('issue')" class="nav-btn flex items-center gap-3 py-3 px-4 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-slate-200"><i class="fas fa-id-card w-5"></i> ออกบัตรใหม่</a>
+                <a href="#" onclick="showView('scan')" class="nav-btn flex items-center gap-3 py-3 px-4 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-slate-200"><i class="fas fa-qrcode w-5"></i> สแกน / จัดการบัตร</a>
+                <a href="#" onclick="showView('treasury')" class="nav-btn flex items-center gap-3 py-3 px-4 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-slate-200"><i class="fas fa-vault w-5"></i> เงินกองทุนธนาคาร</a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800/80">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white font-medium text-sm transition-all">
+                    <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-950">
+            <!-- Header -->
+            <header class="bg-slate-900/60 backdrop-blur-md h-20 border-b border-slate-800/80 flex items-center justify-between px-8 z-10">
+                <div>
+                    <h2 id="header-title" class="text-xl font-bold text-slate-100">ภาพรวมระบบ</h2>
+                    <p class="text-xs text-slate-400">ระบบธนาคารจำลองออนไลน์ (Roleplay Banking System)</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold">
+                        AD
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Viewport -->
+            <div class="flex-1 overflow-y-auto p-8">
+                
+                <!-- 1. DASHBOARD VIEW -->
+                <div id="view-dashboard" class="view space-y-8 max-w-7xl mx-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border border-slate-800">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-400 text-xs font-medium mb-1">เงินคงคลังธนาคาร</p>
+                                    <h3 class="text-3xl font-extrabold text-blue-400" id="dash-treasury">฿0</h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-xl"><i class="fas fa-vault"></i></div>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border border-slate-800">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-400 text-xs font-medium mb-1">จำนวนลูกค้า/บัตรทั้งหมด</p>
+                                    <h3 class="text-3xl font-extrabold text-emerald-400" id="dash-customers">0</h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl"><i class="fas fa-users"></i></div>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border border-slate-800">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-400 text-xs font-medium mb-1">ธุรกรรมวันนี้</p>
+                                    <h3 class="text-3xl font-extrabold text-purple-400" id="dash-tx-today">0</h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-xl"><i class="fas fa-exchange-alt"></i></div>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border border-slate-800">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-400 text-xs font-medium mb-1">เงินหมุนเวียนวันนี้</p>
+                                    <h3 class="text-3xl font-extrabold text-amber-400" id="dash-vol-today">฿0</h3>
+                                </div>
+                                <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-coins"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                        <div class="p-6 border-b border-slate-800/80 flex justify-between items-center">
+                            <h3 class="font-bold text-lg">ธุรกรรมล่าสุด</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
+                                        <th class="p-4 pl-6">เวลา</th>
+                                        <th class="p-4">ประเภท</th>
+                                        <th class="p-4">รหัสบัตร</th>
+                                        <th class="p-4 pr-6">จำนวนเงิน</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-tx-list" class="divide-y divide-slate-800/60 text-sm">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. ISSUE CARD VIEW -->
+                <div id="view-issue" class="view hide max-w-5xl mx-auto">
+                    <div class="glass-panel p-8 rounded-3xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i class="fas fa-camera text-blue-500"></i> 1. ถ่ายรูปเจ้าของบัตร</h3>
+                            <div class="bg-slate-900 rounded-2xl aspect-video mb-4 relative overflow-hidden flex items-center justify-center border border-slate-800 shadow-inner">
+                                <video id="webcam" class="w-full h-full object-cover hide" autoplay playsinline></video>
+                                <img id="photo-preview" class="w-full h-full object-cover hide">
+                                <div id="cam-placeholder" class="text-slate-500 text-center p-6">
+                                    <i class="fas fa-video-slash text-4xl mb-2"></i>
+                                    <p class="text-sm">กล้องยังไม่เปิดใช้งาน</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="startCamera()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl text-sm font-medium transition-all"><i class="fas fa-video mr-1.5"></i> เปิดกล้อง</button>
+                                <button onclick="takePhoto()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/30"><i class="fas fa-camera mr-1.5"></i> ถ่ายภาพ</button>
+                                <button onclick="resetPhoto()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-sm transition-all" title="ถ่ายใหม่"><i class="fas fa-redo"></i></button>
+                            </div>
+                            <canvas id="canvas" class="hidden"></canvas>
+                        </div>
+
+                        <div class="flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i class="fas fa-user-edit text-blue-500"></i> 2. ข้อมูลเจ้าของบัตร</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1 ml-1 font-medium">ชื่อ-นามสกุล (Roleplay)</label>
+                                        <input type="text" id="reg-name" placeholder="เช่น เด็กชายรักเรียน ขยันยิ่ง" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1 ml-1 font-medium">อายุ (ปี)</label>
+                                            <input type="number" id="reg-age" placeholder="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-400 mb-1 ml-1 font-medium">โรงเรียน / สังกัด</label>
+                                            <input type="text" id="reg-school" placeholder="โรงเรียนอนุบาลฝัน" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="generateCard()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl mt-6 shadow-lg shadow-emerald-600/30 transition-all transform active:scale-[0.98]">
+                                <i class="fas fa-magic mr-2"></i> สร้างบัตรเครดิตเด็ก (Issue Card)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. SCAN CARD VIEW -->
+                <div id="view-scan" class="view hide max-w-xl mx-auto">
+                    <div class="glass-panel p-8 rounded-3xl border border-slate-800 text-center">
+                        <h3 class="font-bold text-xl mb-2">สแกนบัตรธนาคารเด็ก</h3>
+                        <p class="text-xs text-slate-400 mb-6">สแกนบาร์โค้ด / QR Code จากหน้าบัตร หรือกรอกรหัส 16 หลัก</p>
+                        
+                        <div id="reader" class="w-full bg-slate-950 rounded-2xl overflow-hidden mb-6 p-2 border border-slate-800"></div>
+                        
+                        <div class="flex gap-2">
+                            <input type="text" id="manual-card" placeholder="กรอกเลขบัตร 16 หลัก" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-lg tracking-widest font-mono focus:outline-none focus:border-blue-500">
+                            <button onclick="searchCard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-xl font-medium transition-all shadow-lg shadow-blue-600/30"><i class="fas fa-search"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. CARD DETAIL & MANAGEMENT VIEW -->
+                <div id="view-manage" class="view hide max-w-5xl mx-auto">
+                    <button onclick="showView('scan')" class="mb-6 text-slate-400 hover:text-white text-sm flex items-center gap-2 transition-all"><i class="fas fa-arrow-left"></i> กลับไปหน้าสแกนบัตร</button>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <!-- Card Preview Box -->
+                        <div class="lg:col-span-5 flex flex-col items-center">
+                            <!-- บัตรจริงที่จะใช้พิมพ์หรือดาวน์โหลด -->
+                            <div id="printable-card" class="credit-card p-6 flex flex-col justify-between shadow-2xl relative">
+                                <div class="flex justify-between items-center z-10">
+                                    <div class="font-extrabold text-sm tracking-wider flex items-center gap-2">
+                                        <i class="fas fa-university text-amber-400"></i> KIDS BANK VIP
+                                    </div>
+                                    <i class="fas fa-wifi text-slate-300 rotate-90 text-sm"></i>
+                                </div>
+
+                                <div class="flex items-center gap-4 z-10 my-2">
+                                    <img id="mc-photo" class="w-16 h-16 rounded-xl object-cover border-2 border-white/30 shadow-md bg-slate-800">
+                                    <div class="overflow-hidden">
+                                        <div class="text-[10px] text-blue-200 tracking-wider font-medium">CARDHOLDER NAME</div>
+                                        <div class="font-bold text-base tracking-wide truncate" id="mc-name">-</div>
+                                        <div class="text-[11px] text-slate-300 truncate mt-0.5" id="mc-school">-</div>
+                                    </div>
+                                </div>
+
+                                <div class="z-10 bg-white/95 backdrop-blur-md rounded-xl p-2.5 text-slate-900 flex flex-col items-center shadow-lg">
+                                    <div class="font-mono text-sm tracking-widest font-extrabold mb-1" id="mc-number">#### #### #### ####</div>
+                                    <svg id="mc-barcode" class="w-full h-8 max-h-8"></svg>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons for Card -->
+                            <div class="w-full max-w-[440px] mt-4 grid grid-cols-2 gap-3">
+                                <button onclick="printCard()" class="bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl text-sm font-medium transition-all border border-slate-700 shadow-lg"><i class="fas fa-print mr-2"></i> ปริ้นท์บัตร</button>
+                                <button onclick="downloadCardImage()" class="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/30"><i class="fas fa-download mr-2"></i> โหลดรูปบัตร</button>
+                            </div>
+
+                            <!-- Balance Box -->
+                            <div class="glass-panel p-5 rounded-2xl border border-slate-800 text-center w-full max-w-[440px] mt-4">
+                                <p class="text-slate-400 text-xs mb-1">ยอดเงินในบัญชีปัจจุบัน</p>
+                                <h2 class="text-3xl font-extrabold text-blue-400" id="mc-balance">฿0</h2>
+                            </div>
+                        </div>
+
+                        <!-- Management & Transactions -->
+                        <div class="lg:col-span-7">
+                            <div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden h-full flex flex-col">
+                                <div class="p-6 border-b border-slate-800/80 bg-slate-900/40">
+                                    <h3 class="font-bold text-lg">ทำรายการฝาก - ถอนเงิน</h3>
+                                </div>
+                                <div class="p-6 space-y-6 flex-1">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="bg-emerald-950/20 p-5 rounded-2xl border border-emerald-500/20">
+                                            <h4 class="font-bold text-emerald-400 mb-3 flex items-center gap-2"><i class="fas fa-plus-circle"></i> ฝากเงิน (Deposit)</h4>
+                                            <input type="number" id="amt-dep" class="w-full bg-slate-950 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="จำนวนเงิน">
+                                            <input type="text" id="note-dep" class="w-full bg-slate-950 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="บันทึกช่วยจำ">
+                                            <button onclick="handleTransaction('deposit')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-600/20">ยืนยันฝากเงิน</button>
+                                        </div>
+                                        <div class="bg-red-950/20 p-5 rounded-2xl border border-red-500/20">
+                                            <h4 class="font-bold text-red-400 mb-3 flex items-center gap-2"><i class="fas fa-minus-circle"></i> ถอนเงิน (Withdraw)</h4>
+                                            <input type="number" id="amt-wd" class="w-full bg-slate-950 border border-red-500/30 rounded-xl px-4 py-2.5 mb-3 text-sm focus:outline-none focus:border-red-500" placeholder="จำนวนเงิน">
+                                            <input type="text" id="note-wd" class="w-full bg-slate-950 border border-red-500/30 rounded-xl px-4 py-2.5 mb-3 text-sm focus:outline-none focus:border-red-500" placeholder="บันทึกช่วยจำ">
+                                            <button onclick="handleTransaction('withdraw')" class="w-full bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg shadow-red-600/20">ยืนยันถอนเงิน</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. TREASURY VIEW -->
+                <div id="view-treasury" class="view hide max-w-4xl mx-auto space-y-6">
+                    <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-8 border border-slate-700/50 shadow-2xl flex justify-between items-center">
+                        <div>
+                            <p class="text-blue-300 text-xs font-semibold tracking-wider uppercase mb-1">เงินกองทุนธนาคารกลาง (Bank Treasury)</p>
+                            <h1 class="text-5xl font-extrabold text-white" id="tr-balance">฿0</h1>
+                        </div>
+                        <div class="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-amber-400 text-3xl border border-white/10">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-emerald-400"><i class="fas fa-plus-circle"></i> เพิ่มเงินกองทุน</h3>
+                            <input type="number" id="tr-add-amt" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="จำนวนเงิน">
+                            <input type="text" id="tr-add-note" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-emerald-500" placeholder="แหล่งที่มา">
+                            <button onclick="updateTreasury('add')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-semibold text-sm transition-all">นำเงินเข้าคลัง</button>
+                        </div>
+                        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-red-400"><i class="fas fa-minus-circle"></i> นำเงินกองทุนออก</h3>
+                            <input type="number" id="tr-sub-amt" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-red-500" placeholder="จำนวนเงิน">
+                            <input type="text" id="tr-sub-note" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-red-500" placeholder="เหตุผลการเบิกจ่าย">
+                            <button onclick="updateTreasury('sub')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-semibold text-sm transition-all">นำเงินออกจากคลัง</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- FIREBASE & APP LOGIC -->
+    <!-- ======================================================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where, orderBy, limit, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCIGpkP-pLTYEsnmW4snhYl0P_IhIUGrrE",
+            authDomain: "bank-4e548.firebaseapp.com",
+            databaseURL: "https://bank-4e548-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bank-4e548",
+            storageBucket: "bank-4e548.firebasestorage.app",
+            messagingSenderId: "839992820393",
+            appId: "1:839992820393:web:bc66ec1bf03834b2a59fb8",
+            measurementId: "G-9F4KCBX8TL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentCardId = null;
+        let html5QrcodeScanner = null;
+        let videoStream = null;
+
+        window.showToast = (msg, title = 'สำเร็จ', type = 'success') => {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-msg').innerText = msg;
+            
+            toast.className = `fixed top-6 right-6 z-50 transform transition-all duration-300 glass-panel shadow-2xl rounded-2xl p-4 flex items-center gap-3 border-l-4 ${
+                type === 'success' ? 'border-emerald-500 text-slate-100' : 'border-red-500 text-slate-100'
+            }`;
+            icon.className = type === 'success' ? 'fas fa-check-circle text-emerald-400 text-2xl' : 'fas fa-exclamation-circle text-red-400 text-2xl';
+            
+            setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); }, 3500);
+        };
+
+        window.formatMoney = (amount) => '฿' + amount.toLocaleString('th-TH');
+        window.generateId = () => Math.random().toString(36).substr(2, 9);
+
+        // Auth
+        window.login = () => {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            if(user === 'admin' && pass === '1234') {
+                sessionStorage.setItem('isAdmin', 'true');
+                document.getElementById('login-screen').classList.add('hide');
+                document.getElementById('app-screen').classList.remove('hide');
+                showView('dashboard');
+                showToast("ยินดีต้อนรับสู่ระบบ Admin ธนาคารเด็ก", "เข้าสู่ระบบสำเร็จ");
+            } else {
+                showToast("Username หรือ Password ไม่ถูกต้อง", "ข้อผิดพลาด", "error");
+            }
+        };
+
+        window.logout = () => {
+            sessionStorage.removeItem('isAdmin');
+            document.getElementById('login-screen').classList.remove('hide');
+            document.getElementById('app-screen').classList.add('hide');
+        };
+
+        if(sessionStorage.getItem('isAdmin') === 'true') {
+            document.getElementById('login-screen').classList.add('hide');
+            document.getElementById('app-screen').classList.remove('hide');
+            showView('dashboard');
+        }
+
+        window.showView = async (viewName) => {
+            document.querySelectorAll('.view').forEach(el => el.classList.add('hide'));
+            document.getElementById(`view-${viewName}`).classList.remove('hide');
+            
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-600/20');
+                el.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-slate-200');
+            });
+            event?.currentTarget?.classList?.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-600/20');
+            event?.currentTarget?.classList?.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-slate-200');
+
+            if(viewName === 'dashboard') loadDashboard();
+            if(viewName === 'treasury') loadTreasury();
+            if(viewName === 'scan') initScanner();
+            else stopScanner();
+        };
+
+        // Dashboard
+        async function loadDashboard() {
+            document.getElementById('header-title').innerText = "ภาพรวมระบบ";
+            try {
+                const tSnap = await getDocs(collection(db, "BankTreasury"));
+                let totalT = 0;
+                tSnap.forEach(doc => { totalT += doc.data().amount || 0 });
+                document.getElementById('dash-treasury').innerText = formatMoney(totalT);
+
+                const cSnap = await getDocs(collection(db, "Customers"));
+                document.getElementById('dash-customers').innerText = cSnap.size;
+
+                const q = query(collection(db, "Transactions"), orderBy("timestamp", "desc"), limit(6));
+                const txSnap = await getDocs(q);
+                
+                let tbody = '';
+                let txCount = 0;
+                let volToday = 0;
+                const today = new Date().toDateString();
+
+                txSnap.forEach(d => {
+                    const data = d.data();
+                    const date = data.timestamp ? data.timestamp.toDate() : new Date();
+                    if(date.toDateString() === today) {
+                        txCount++;
+                        volToday += Math.abs(data.amount);
+                    }
+                    
+                    const color = data.type === 'deposit' ? 'text-emerald-400' : 'text-red-400';
+                    const sign = data.type === 'deposit' ? '+' : '-';
+                    
+                    tbody += `
+                        <tr class="hover:bg-slate-900/40 transition-colors">
+                            <td class="p-4 pl-6 text-slate-400">${date.toLocaleTimeString()}</td>
+                            <td class="p-4"><span class="${color} font-medium px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs">${data.type.toUpperCase()}</span></td>
+                            <td class="p-4 font-mono text-slate-300">${data.cardId || '-'}</td>
+                            <td class="p-4 pr-6 font-bold ${color}">${sign}${formatMoney(data.amount)}</td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('dashboard-tx-list').innerHTML = tbody || '<tr><td colspan="4" class="p-6 text-center text-slate-500">ยังไม่มีธุรกรรมในระบบ</td></tr>';
+                document.getElementById('dash-tx-today').innerText = txCount;
+                document.getElementById('dash-vol-today').innerText = formatMoney(volToday);
+            } catch(e) { console.error(e); }
+        }
+
+        // Issue Card
+        window.startCamera = async () => {
+            const video = document.getElementById('webcam');
+            const camPh = document.getElementById('cam-placeholder');
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.srcObject = videoStream;
+                video.classList.remove('hide');
+                camPh.classList.add('hide');
+                document.getElementById('photo-preview').classList.add('hide');
+            } catch (err) { showToast("ไม่สามารถเข้าถึงกล้องได้", "ข้อผิดพลาด", "error"); }
+        };
+
+        window.takePhoto = () => {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('canvas');
+            const preview = document.getElementById('photo-preview');
+            if(!videoStream) return showToast("กรุณาเปิดกล้องก่อนถ่ายภาพ", "แจ้งเตือน", "error");
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            preview.src = canvas.toDataURL('image/jpeg', 0.85);
+            preview.classList.remove('hide');
+            video.classList.add('hide');
+        };
+
+        window.resetPhoto = () => {
+            document.getElementById('photo-preview').classList.add('hide');
+            document.getElementById('webcam').classList.remove('hide');
+        };
+
+        window.generateCard = async () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const age = document.getElementById('reg-age').value.trim();
+            const school = document.getElementById('reg-school').value.trim();
+            const photo = document.getElementById('photo-preview').src;
+
+            if(!name || !age || !photo.startsWith('data:image')) {
+                return showToast("กรุณากรอกข้อมูลและถ่ายรูปให้ครบถ้วน", "ข้อมูลไม่ครบ", "error");
+            }
+
+            const custId = 'CUST-' + generateId();
+            const cardId = 'CARD-' + generateId();
+            
+            let pan = "5";
+            for(let i=0; i<15; i++) pan += Math.floor(Math.random() * 10);
+            const formattedPan = pan.match(/.{1,4}/g).join(' ');
+
+            try {
+                await setDoc(doc(db, "Customers", custId), { name, age, school, photo, created: serverTimestamp() });
+                await setDoc(doc(db, "Cards", cardId), { custId, cardNumber: formattedPan, rawPan: pan, status: 'active', created: serverTimestamp() });
+                await setDoc(doc(db, "CardBalances", cardId), { balance: 0, updated: serverTimestamp() });
+
+                showToast("ออกบัตรสำเร็จเรียบร้อยแล้ว!", "สำเร็จ");
+                document.getElementById('reg-name').value = '';
+                document.getElementById('reg-age').value = '';
+                document.getElementById('reg-school').value = '';
+                resetPhoto();
+
+                document.getElementById('manual-card').value = pan;
+                showView('scan');
+                searchCard();
+            } catch (e) {
+                console.error(e);
+                showToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล", "ข้อผิดพลาด", "error");
+            }
+        };
+
+        // Scanner
+        function initScanner() {
+            document.getElementById('header-title').innerText = "สแกนบัตรธนาคาร";
+            if(html5QrcodeScanner) return;
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 240, height: 240} }, false);
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function stopScanner() {
+            if(html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }
+        }
+
+        function onScanSuccess(decodedText) {
+            stopScanner();
+            document.getElementById('manual-card').value = decodedText;
+            searchCard();
+        }
+        function onScanFailure() {}
+
+        window.searchCard = async () => {
+            const val = document.getElementById('manual-card').value.trim();
+            if(!val) return showToast("กรุณาระบุเลขบัตร 16 หลัก", "แจ้งเตือน", "error");
+
+            try {
+                const cardsRef = collection(db, "Cards");
+                const q = query(cardsRef, where("rawPan", "==", val.replace(/\s/g, '')));
+                const snap = await getDocs(q);
+
+                if(snap.empty) return showToast("ไม่พบบัตรนี้ในระบบ", "ไม่พบข้อมูล", "error");
+
+                const cardData = snap.docs[0].data();
+                currentCardId = snap.docs[0].id;
+
+                const cQuery = query(collection(db, "Customers"), where("__name__", "==", cardData.custId));
+                const cRes = await getDocs(cQuery);
+                const custData = cRes.docs[0].data();
+
+                const bQuery = query(collection(db, "CardBalances"), where("__name__", "==", currentCardId));
+                const bRes = await getDocs(bQuery);
+                const balData = bRes.docs[0].data();
+
+                document.getElementById('mc-number').innerText = cardData.cardNumber;
+                document.getElementById('mc-name').innerText = custData.name;
+                document.getElementById('mc-school').innerText = `${custData.school} (อายุ ${custData.age} ปี)`;
+                document.getElementById('mc-balance').innerText = formatMoney(balData.balance);
+                document.getElementById('mc-photo').src = custData.photo;
+
+                JsBarcode("#mc-barcode", cardData.rawPan, {
+                    format: "CODE128",
+                    displayValue: false,
+                    height: 32,
+                    margin: 0
+                });
+
+                document.getElementById('manual-card').value = '';
+                showView('manage');
+                document.getElementById('header-title').innerText = "จัดการบัตร & ทำรายการ";
+            } catch (e) {
+                console.error(e);
+                showToast("เกิดข้อผิดพลาดในการโหลดข้อมูลบัตร", "ข้อผิดพลาด", "error");
+            }
+        };
+
+        // Print & Download Card Features
+        window.printCard = () => {
+            const cardElement = document.getElementById('printable-card').innerHTML;
+            const printWindow = window.open('', '_blank', 'width=700,height=500');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print Kids Bank Card</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+                        body { font-family: 'Prompt', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #fff; margin: 0; }
+                        .credit-card {
+                            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
+                            border-radius: 20px; color: white; position: relative; overflow: hidden; width: 420px; aspect-ratio: 1.586 / 1; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #cbd5e1;
+                        }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    <div class="credit-card">${cardElement}</div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        };
+
+        window.downloadCardImage = () => {
+            const cardEl = document.getElementById('printable-card');
+            html2canvas(cardEl, { scale: 3, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `KidsBank-Card-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("ดาวน์โหลดรูปบัตรสำเร็จ", "สำเร็จ");
+            }).catch(err => {
+                showToast("ไม่สามารถดาวน์โหลดรูปภาพได้", "ข้อผิดพลาด", "error");
+            });
+        };
+
+        // Transactions
+        window.handleTransaction = async (type) => {
+            if(!currentCardId) return;
+            const amtId = type === 'deposit' ? 'amt-dep' : 'amt-wd';
+            const noteId = type === 'deposit' ? 'note-dep' : 'note-wd';
+            
+            const amt = parseFloat(document.getElementById(amtId).value);
+            const note = document.getElementById(noteId).value.trim() || '-';
+
+            if(!amt || amt <= 0) return showToast("กรุณาระบุจำนวนเงินให้ถูกต้อง", "แจ้งเตือน", "error");
+
+            try {
+                const bQuery = query(collection(db, "CardBalances"), where("__name__", "==", currentCardId));
+                const bRes = await getDocs(bQuery);
+                const balRef = bRes.docs[0].ref;
+                let currentBal = bRes.docs[0].data().balance;
+
+                if(type === 'withdraw' && currentBal < amt) return showToast("ยอดเงินในบัญชีไม่เพียงพอสำหรับการถอน", "ยอดเงินไม่พอ", "error");
+
+                const newBal = type === 'deposit' ? currentBal + amt : currentBal - amt;
+
+                await updateDoc(balRef, { balance: newBal, updated: serverTimestamp() });
+                await addDoc(collection(db, "Transactions"), {
+                    cardId: currentCardId,
+                    type: type,
+                    amount: amt,
+                    note: note,
+                    timestamp: serverTimestamp()
+                });
+
+                document.getElementById('mc-balance').innerText = formatMoney(newBal);
+                document.getElementById(amtId).value = '';
+                document.getElementById(noteId).value = '';
+                showToast(`ทำรายการ ${type === 'deposit' ? 'ฝากเงิน' : 'ถอนเงิน'} สำเร็จ`, "สำเร็จ");
+            } catch(e) {
+                console.error(e);
+                showToast("เกิดข้อผิดพลาดในการทำธุรกรรม", "ข้อผิดพลาด", "error");
+            }
+        };
+
+        // Treasury
+        window.loadTreasury = async () => {
+            document.getElementById('header-title').innerText = "เงินกองทุนธนาคารกลาง";
+            try {
+                const tSnap = await getDocs(collection(db, "BankTreasury"));
+                let total = 0;
+                tSnap.forEach(doc => { total += doc.data().amount || 0 });
+                document.getElementById('tr-balance').innerText = formatMoney(total);
+            } catch(e) { console.error(e); }
+        };
+
+        window.updateTreasury = async (action) => {
+            const amtId = action === 'add' ? 'tr-add-amt' : 'tr-sub-amt';
+            const noteId = action === 'add' ? 'tr-add-note' : 'tr-sub-note';
+            
+            let amt = parseFloat(document.getElementById(amtId).value);
+            const note = document.getElementById(noteId).value.trim() || '-';
+
+            if(!amt || amt <= 0) return showToast("กรุณาระบุจำนวนเงิน", "แจ้งเตือน", "error");
+            if(action === 'sub') amt = -Math.abs(amt);
+
+            try {
+                await addDoc(collection(db, "BankTreasury"), { amount: amt, note, timestamp: serverTimestamp(), admin: 'admin' });
+                document.getElementById(amtId).value = '';
+                document.getElementById(noteId).value = '';
+                showToast("อัพเดทเงินกองทุนธนาคารสำเร็จ", "สำเร็จ");
+                loadTreasury();
+            } catch(e) { console.error(e); showToast("เกิดข้อผิดพลาด", "ข้อผิดพลาด", "error"); }
+        };
+    </script>
+</body>
+</html>
